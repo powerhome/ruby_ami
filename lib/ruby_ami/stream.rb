@@ -60,7 +60,6 @@ module RubyAMI
       @state = :started
       fire_event Connected.new
       login @username, @password if @username && @password
-      send_action "Events", "EventMask" => "off"
     end
 
     def send_data(data)
