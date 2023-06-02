@@ -45,7 +45,7 @@ module RubyAMI
 
       @write_socket_pool = ConnectionPool.new(timeout: @timeout + 5) do
         sock = Timeout::timeout(@timeout) { TCPSocket.from_ruby_socket ::TCPSocket.new(@host, @port) }
-        sock.write "Events", "EventMask" => "off"
+        send_action "Events", "EventMask" => "off"
         sock
       end
 
