@@ -42,12 +42,7 @@ module RubyAMI
       Timeout::timeout(@timeout) do
         @read_socket = TCPSocket.from_ruby_socket ::TCPSocket.new(@host, @port)
       end
-
-      @write_socket_pool = ConnectionPool.new(timeout: @timeout + 5) do
-        sock = Timeout::timeout(@timeout) { TCPSocket.from_ruby_socket ::TCPSocket.new(@host, @port) }
-        send_action "Events", "EventMask" => "off"
-        sock
-      end
+      @write_socket_pool = ConnectionPool.new(timeout: @timeout) { TCPSocket.from_ruby_socket ::TCPSocket.new(@host, @port) }
 
       post_init
       loop { receive_data @read_socket.readpartial(4096) }
