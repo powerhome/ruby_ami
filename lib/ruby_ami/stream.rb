@@ -1,4 +1,7 @@
 # encoding: utf-8
+
+require "connection_pool"
+
 module RubyAMI
   class Stream
     class ConnectionStatus
@@ -37,10 +40,17 @@ module RubyAMI
 
     def run
       Timeout::timeout(@timeout) do
-        @socket = TCPSocket.from_ruby_socket ::TCPSocket.new(@host, @port)
+        @read_socket = TCPSocket.from_ruby_socket ::TCPSocket.new(@host, @port)
       end
+
+      @write_socket_pool = ConnectionPool.new(timeout: @timeout + 5) do
+        sock = Timeout::timeout(@timeout) { TCPSocket.from_ruby_socket ::TCPSocket.new(@host, @port) }
+        sock.write "Events", "EventMask" => "off"
+        sock
+      end
+
       post_init
-      loop { receive_data @socket.readpartial(4096) }
+      loop { receive_data @read_socket.readpartial(4096) }
     rescue Errno::ECONNREFUSED, Errno::EHOSTUNREACH, SocketError => e
       logger.error "Connection failed due to #{e.class}. Check your config and the server."
     rescue EOFError
@@ -58,7 +68,7 @@ module RubyAMI
     end
 
     def send_data(data)
-      @socket.write data
+      @write_socket_pool.with { |sock| sock.write data }
     end
 
     def send_action(name, headers = {}, error_handler = self.method(:abort))
