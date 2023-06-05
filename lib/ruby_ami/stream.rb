@@ -39,10 +39,10 @@ module RubyAMI
     end
 
     def run
-      Timeout::timeout(@timeout) do
-        @read_socket = TCPSocket.from_ruby_socket ::TCPSocket.new(@host, @port)
+      @read_socket = Connection.new(host: @host, port: @port, username: @username, password: @password)
+      @write_socket_pool = ConnectionPool.new(size: 10, timeout: @timeout) do
+        Connection.new(host: @host, port: @port, username: @username, password: @password, write_only: true)
       end
-      @write_socket_pool = ConnectionPool.new(timeout: @timeout) { TCPSocket.from_ruby_socket ::TCPSocket.new(@host, @port) }
 
       post_init
       loop { receive_data @read_socket.readpartial(4096) }
@@ -59,7 +59,6 @@ module RubyAMI
     def post_init
       @state = :started
       fire_event Connected.new
-      login @username, @password if @username && @password
     end
 
     def send_data(data)
@@ -68,9 +67,12 @@ module RubyAMI
 
     def send_action(name, headers = {}, error_handler = self.method(:abort))
       condition = Celluloid::Condition.new
-      action = dispatch_action name, headers do |response|
-        condition.signal response
+      action = @write_socket_pool.with do |sock|
+        sock.dispatch_action name, headers do |response|
+          condition.signal response
+        end
       end
+      register_sent_action action
       condition.wait
       action.response.tap do |resp|
         if resp.is_a? Exception
@@ -109,21 +111,6 @@ module RubyAMI
     alias :error_received :message_received
 
     private
-
-    def login(username, password, event_mask = 'On')
-      dispatch_action 'Login',
-        'Username' => username,
-        'Secret'   => password,
-        'Events'   => event_mask
-    end
-
-    def dispatch_action(*args, &block)
-      action = Action.new *args, &block
-      logger.trace "[SEND] #{action.to_s}"
-      register_sent_action action
-      send_data action.to_s
-      action
-    end
 
     def fire_event(event)
       @event_callback.call event
