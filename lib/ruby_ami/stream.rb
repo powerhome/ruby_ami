@@ -72,6 +72,7 @@ module RubyAMI
           condition.signal response
         end
       end
+      logger.warn "[ACTION] #{action.inspect}"
       register_sent_action action
       condition.wait
       action.response.tap do |resp|
