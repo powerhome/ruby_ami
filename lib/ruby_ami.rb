@@ -18,6 +18,7 @@ end
   agi_result_parser
   async_agi_environment_parser
   client
+  connection
   error
   event
   lexer
