@@ -4,6 +4,7 @@ module RubyAMI
 
     delegate :readpartial, to: :socket
     delegate :write, to: :socket
+    delegate :close, to: :socket
 
     def initialize(host:, port:, username:, password:, write_only: false)
       self.socket = TCPSocket.from_ruby_socket ::TCPSocket.new(host, port)

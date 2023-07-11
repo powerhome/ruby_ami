@@ -144,7 +144,8 @@ module RubyAMI
 
     def finalize
       logger.debug "Finalizing stream"
-      @socket.close if @socket
+      @read_socket.close if @read_socket
+      @write_socket_pool.shutdown { |sock| sock.close }
       @state = :stopped
       fire_event Disconnected.new
     end
