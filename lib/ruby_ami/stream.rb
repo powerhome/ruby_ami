@@ -39,11 +39,9 @@ module RubyAMI
     end
 
     def run
-      @read_socket = Connection.new(host: @host, port: @port, username: @username, password: @password)
-      send_action("Login", "Username" => @username, "Secret" => @password, "Events" => "On")
+      @read_socket = Connection.new(stream: self, host: @host, port: @port, username: @username, password: @password)
       @write_socket_pool = ConnectionPool.new(size: 10, timeout: @timeout) do
-        Connection.new(host: @host, port: @port, username: @username, password: @password, write_only: true)
-        send_action("Login", "Username" => @username, "Secret" => @password, "Events" => "Off")
+        Connection.new(stream: self, host: @host, port: @port, username: @username, password: @password, write_only: true)
       end
 
       post_init
@@ -111,17 +109,17 @@ module RubyAMI
       logger.error "Encountered a syntax error. Ignoring chunk: #{ignored_chunk.inspect}"
     end
 
+    def register_sent_action(action)
+      @sent_actions[action.action_id] = action
+      register_causal_action action if action.has_causal_events?
+    end
+
     alias :error_received :message_received
 
     private
 
     def fire_event(event)
       @event_callback.call event
-    end
-
-    def register_sent_action(action)
-      @sent_actions[action.action_id] = action
-      register_causal_action action if action.has_causal_events?
     end
 
     def sent_action_with_id(action_id)

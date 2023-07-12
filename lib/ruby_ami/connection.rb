@@ -2,20 +2,22 @@ module RubyAMI
   class Connection
     include Celluloid::IO
 
-    def initialize(host:, port:, username:, password:, write_only: false)
+    def initialize(stream:, host:, port:, username:, password:, write_only: false)
       self.socket = TCPSocket.from_ruby_socket ::TCPSocket.new(host, port)
       self.username = username
       self.password = password
-      #if write_only
-      #  login("Off")
-      #else
-      #  login
-      #end
+      self.stream = stream
+      if write_only
+        login("Off")
+      else
+        login
+      end
     end
 
     def dispatch_action(*args, &block)
       action = Action.new *args, &block
       logger.trace "[SEND] #{action.to_s}"
+      stream.register_sent_action(action)
       socket.write(action.to_s)
       action
     end
@@ -34,7 +36,7 @@ module RubyAMI
 
   private
 
-    attr_accessor :socket, :username, :password
+    attr_accessor :socket, :username, :password, :stream
 
     def login(event_mask = "On")
       dispatch_action "Login",
