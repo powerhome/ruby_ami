@@ -6,11 +6,11 @@ module RubyAMI
       self.socket = TCPSocket.from_ruby_socket ::TCPSocket.new(host, port)
       self.username = username
       self.password = password
-      if write_only
-        login("Off")
-      else
-        login
-      end
+      #if write_only
+      #  login("Off")
+      #else
+      #  login
+      #end
     end
 
     def dispatch_action(*args, &block)

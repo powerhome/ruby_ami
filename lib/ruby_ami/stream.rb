@@ -40,8 +40,10 @@ module RubyAMI
 
     def run
       @read_socket = Connection.new(host: @host, port: @port, username: @username, password: @password)
+      send_action("Login", "Username" => @username, "Secret" => @password, "Events" => "On")
       @write_socket_pool = ConnectionPool.new(size: 10, timeout: @timeout) do
         Connection.new(host: @host, port: @port, username: @username, password: @password, write_only: true)
+        send_action("Login", "Username" => @username, "Secret" => @password, "Events" => "Off")
       end
 
       post_init
