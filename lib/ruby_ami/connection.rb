@@ -7,6 +7,7 @@ module RubyAMI
       self.username = username
       self.password = password
       self.stream = stream
+      self.logger = Logger
       if write_only
         login("Off")
       else
@@ -36,7 +37,7 @@ module RubyAMI
 
   private
 
-    attr_accessor :socket, :username, :password, :stream
+    attr_accessor :socket, :username, :password, :stream, :logger
 
     def login(event_mask = "On")
       dispatch_action "Login",
