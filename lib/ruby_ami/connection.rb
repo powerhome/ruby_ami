@@ -2,10 +2,6 @@ module RubyAMI
   class Connection
     include Celluloid::IO
 
-    delegate :readpartial, to: :socket
-    delegate :write, to: :socket
-    delegate :close, to: :socket
-
     def initialize(host:, port:, username:, password:, write_only: false)
       self.socket = TCPSocket.from_ruby_socket ::TCPSocket.new(host, port)
       self.username = username
@@ -22,6 +18,18 @@ module RubyAMI
       logger.trace "[SEND] #{action.to_s}"
       socket.write(action.to_s)
       action
+    end
+
+    def readpartial(bytes)
+      socket.readpartial(bytes)
+    end
+
+    def write(data)
+      socket.write(data)
+    end
+
+    def close
+      socket.close
     end
 
   private
