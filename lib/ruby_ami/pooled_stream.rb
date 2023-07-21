@@ -7,9 +7,10 @@ module RubyAMI
     end
 
     def run
-      self.reader_stream = RubyAMI::Stream.new(*option_stream_values)
+      stream = RubyAMI::Stream.new(*option_stream_values)
       create_writer_pool
-      reader_stream.run
+      create_readers
+      stream.run
     end
 
     def method_missing(method, *args, &block)
@@ -26,6 +27,48 @@ module RubyAMI
         stream = RubyAMI::Stream.new(*option_stream_values, 'Off')
         stream.async.run
         stream
+      end
+    end
+
+    def create_readers
+      event_types = [
+        'TestEvent', 
+        'Newchannel', 
+        'VarSet', 
+        'Newexten', 
+        'NewCallerid', 
+        'NewConnectedLine', 
+        'DialBegin', 
+        'Newstate', 
+        'OriginateResponse', 
+        'DialEnd', 
+        'AsyncAGIStart', 
+        'DeviceStateChange', 
+        'AGIExecStart', 
+        'AGIExecEnd', 
+        'AsyncAGIExec', 
+        'MixMonitorStart', 
+        'BridgeCreate', 
+        'BridgeEnter', 
+        'MusicOnHoldStart', 
+        'BridgeLeave', 
+        'BridgeDestroy', 
+        'AsyncAGIEnd', 
+        'SoftHangupRequest', 
+        'Hangup', 
+        'MusicOnHoldStop'
+      ]
+      event_types.each do |event_type|
+        stream = RubyAMI::Stream.new(*option_stream_values)
+        stream.async.run
+        sleep 1 #it fails if event gets sent too soon
+        stream.send_action 'Filter', 'Filter' => "Event: #{event_type}", 'Operation' => 'Add'
+      end
+      reader_stream = RubyAMI::Stream.new(*option_stream_values)
+      reader_stream.async.run
+      sleep 1
+      event_types.each do |event_type|
+        reader_stream.send_action 'Filter', 'Filter' => "!Event: #{event_type}", 'Operation' => 'Add'
       end
     end
 
